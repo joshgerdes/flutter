@@ -580,6 +580,22 @@ class FuchsiaDevice extends Device {
   /// [true] if the current host address is IPv6.
   bool get ipv6 => _ipv6 ??= isIPv6Address(id);
 
+
+  String _cachedHostAddress;
+  /// Return the address that the device should use to communicate with the
+  /// host.
+  Future<String> get hostAddress async {
+    if (_cachedHostAddress != null) {
+      return _cachedHostAddress;
+    }
+    final RunResult result = await shell('echo \$SSH_CONNECTION');
+    if (result.exitCode != 0) {
+      throwToolExit('Failed to get local address, aborting.\n$result');
+    }
+    _cachedHostAddress = result.stdout.split(' ')[0].replaceAll('%', '%25');
+    return _cachedHostAddress;
+  }
+
   /// List the ports currently running a dart observatory.
   Future<List<int>> servicePorts() async {
     const String findCommand = 'find /hub -name vmservice-port';
